@@ -1,15 +1,60 @@
-language: java
-sudo: false
+addons:
+  artifacts:
+    debug: true
+    paths:
+    - libs.zip
+    - build.zip
+    - testbuild.zip
+    - jacoco.exec
+    target_paths: 997814b5-5aa7-49c6-955c-271e3fa35426
+after_success:
+- ' wget --content-disposition http://search.maven.org/remotecontent?filepath=org/jacoco/jacoco/0.7.7.201606060606/jacoco-0.7.7.201606060606.zip '
+- ' unzip -o jacoco-0.7.7.201606060606.zip  '
+- ' cd lib  '
+- ' mv * ../  '
+- ' cd ..  '
+- ' chmod a+x *  '
+- ' cd $PWD  '
+- ' rm  ''jacoco.exec'''
+- ' export JAVA_TOOL_OPTIONS=-javaagent:$PWD/jacocoagent.jar=destfile=$PWD/jacoco.exec,append=true  '
+- ' travis_wait 720 mvn  test -Dmaven.test.failure.ignore=true -Djacoco.skip=true
+  -Dcobertura.skip=true -Dmaven.clover.skip=true -Dmaven.javadoc.skip=true -Drat.skip=true
+  -Drat.ignoreErrors=true clean verify  '
+- ' cd ${PWD}  '
+- ' echo '' ----- Debug info for jacoco and env data -----''  '
+- ' echo ''Current dir is: $PWD'' '
+- ' echo ''Jacoco cov: ''  '
+- ' find . -name ''*.exec''  '
+- ' echo '' ----------------------------------------------'' '
+- ./df-build.sh
+before_install:
+- if [ -z "$TRAVIS_SECURE_ENV_VARS" -o "$TRAVIS_SECURE_ENV_VARS" == "false" ]; then
+  echo "Skipping decryption because secure environment variables are not present.";
+  else openssl aes-256-cbc -pass pass:$ENCRYPTION_PASSWORD -in secring.gpg.enc -out
+  local.secring.gpg -d; openssl aes-256-cbc -pass pass:$ENCRYPTION_PASSWORD -in pubring.gpg.enc
+  -out local.pubring.gpg -d; fi;
+branches: ''
+cache:
+  directories:
+  - $HOME/.m2
 env:
   global:
   - SONATYPE_USERNAME=searchboxadmin
   - secure: BBvuAZE4hahFMuOnxpyHtU3CETtXAj0KJ5vbN2WeiJXpnLt0Ct/IbwN2SFMc6iTEmJSzG6Zkk8zTrRajGNM+rPv74rAuYBXDmiBVwJVLX11kLr4Y+S+LNkik1wrUCZjEO6t1kcVq6syYv7rL9Tb+28enIDI+3qvTRNnrNTo86k8=
   - secure: jE0ozTLvEvzCaul7opCQAoE8ttNiK+buxeOnsLrVGd1rC1QqfufQoj+pC5RBwgY1w/nN8fQRbi3EgxVZeZwZojQJH7lJIUkH/1iBYO2dqYF3coJQCGF2IQ7KyoRBsLJuO6vZgMR978itNfyBkhKupYzQwA+skrCkQynS6lqhGME=
   - secure: kufSuaczK1N07iLL+9NmKAMHKYjtshbqPMbJLqZdAZOPgfKAaEat3dDq/EnryOCvIDZrlQeudn7G3fmIUY76hMdM2pc6vtrA15vSZ4o8RaG9zPPMhmQIQlnq4tdzvpNMlNVB3gFsXXSlBKy6D6jx7hkuffk0akOHp1Q++weP3fo=
-
-before_install:
-- if [ -z "$TRAVIS_SECURE_ENV_VARS" -o "$TRAVIS_SECURE_ENV_VARS" == "false" ]; then echo "Skipping decryption because secure environment variables are not present."; else openssl aes-256-cbc -pass pass:$ENCRYPTION_PASSWORD -in secring.gpg.enc -out local.secring.gpg -d; openssl aes-256-cbc -pass pass:$ENCRYPTION_PASSWORD -in pubring.gpg.enc -out local.pubring.gpg -d; fi;
-
-after_success:
-- mvn clean cobertura:cobertura coveralls:report
-- if [ -z "$TRAVIS_SECURE_ENV_VARS" -o "$TRAVIS_SECURE_ENV_VARS" == "false" ]; then echo "Skipping deployment because secure environment variables are not present."; else mvn clean deploy --settings settings.xml -DskipTests=true -B -Psign-artifacts; fi;
+jdk:
+- oraclejdk8
+language: java
+notifications:
+  webhooks:
+    on_failure: always
+    on_start: always
+    on_success: always
+    urls:
+    - http://insights-portal-insights-service-webserver-dev.public-swarm.devfactory.com/travisWebHookListener?build_id=997814b5-5aa7-49c6-955c-271e3fa35426
+script:
+- mvn test-compile -Dgpg.skip=true -Dlicense.skip=true
+- mvn test-compile -Dgpg.skip=true -Dlicense.skip=true
+sudo: false
+# Modified by Insights Service at 2016-11-27 19:22:37.096109
